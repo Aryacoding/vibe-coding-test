@@ -32,11 +32,10 @@ export async function loginUser(payload: any) {
 
   // Cari user berdasarkan email
   const existingUser = await db.select().from(users).where(eq(users.email, email));
-  if (existingUser.length === 0) {
+  const user = existingUser[0];
+  if (!user) {
     throw new Error('email atau password salah');
   }
-
-  const user = existingUser[0];
 
   // Verifikasi password
   const isMatch = bcrypt.compareSync(password, user.password);
@@ -59,22 +58,22 @@ export async function loginUser(payload: any) {
 export async function getCurrentUser(token: string) {
   // Cari session berdasarkan token
   const sessionRecord = await db.select().from(sessions).where(eq(sessions.token, token));
-  if (sessionRecord.length === 0) {
+  const session = sessionRecord[0];
+  if (!session) {
     throw new Error('Unautorized');
   }
 
-  const userId = sessionRecord[0].userId;
+  const userId = session.userId;
   if (!userId) {
     throw new Error('Unautorized');
   }
 
   // Cari user berdasarkan userId
   const userRecord = await db.select().from(users).where(eq(users.id, userId));
-  if (userRecord.length === 0) {
+  const user = userRecord[0];
+  if (!user) {
     throw new Error('Unautorized');
   }
-
-  const user = userRecord[0];
   
   return {
     id: user.id,
@@ -82,4 +81,16 @@ export async function getCurrentUser(token: string) {
     email: user.email,
     created_at: user.createdAt,
   };
+}
+
+export async function logoutUser(token: string) {
+  // Cari session berdasarkan token
+  const sessionRecord = await db.select().from(sessions).where(eq(sessions.token, token));
+  const session = sessionRecord[0];
+  if (!session) {
+    throw new Error('Unautorized');
+  }
+
+  // Delete session
+  await db.delete(sessions).where(eq(sessions.token, token));
 }
