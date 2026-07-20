@@ -55,3 +55,31 @@ export async function loginUser(payload: any) {
 
   return { data: token };
 }
+
+export async function getCurrentUser(token: string) {
+  // Cari session berdasarkan token
+  const sessionRecord = await db.select().from(sessions).where(eq(sessions.token, token));
+  if (sessionRecord.length === 0) {
+    throw new Error('Unautorized');
+  }
+
+  const userId = sessionRecord[0].userId;
+  if (!userId) {
+    throw new Error('Unautorized');
+  }
+
+  // Cari user berdasarkan userId
+  const userRecord = await db.select().from(users).where(eq(users.id, userId));
+  if (userRecord.length === 0) {
+    throw new Error('Unautorized');
+  }
+
+  const user = userRecord[0];
+  
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    created_at: user.createdAt,
+  };
+}
